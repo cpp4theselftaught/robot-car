@@ -1,6 +1,5 @@
-#include <timer-api.h>
-#include <timer_setup.h>
 #include <IRremote.h>
+#include "robotstatemachine.h"
 
 /* Infra-red remote codes */
 #define BUTTON_UP       16736925
@@ -30,21 +29,15 @@ int const DIRECTION_2_PIN = 8;
 int const DIRECTION_3_PIN = 9;
 int const DIRECTION_4_PIN = 11;
 
+uint32_t hello = 0;
+
 /* Infra-red receiver and decoder */
 IRrecv irrecv(IR_REMOTE_RECV_PIN);
 decode_results results;
 
-/* 1 KHz timer */
-unsigned long long tick_count = 0;
-unsigned int restant = 0;
-void timer_handle_interrupts(int timer)
-{
-  if (restant) --restant;
-  tick_count++;
-}
-
 /* Functions to move the robot */
-void goForward(){ 
+void goForward(RobotStateMachine_struct *, void*){
+  Serial.println("Forward");
   digitalWrite(ENABLE_A_PIN, HIGH);
   digitalWrite(ENABLE_B_PIN, HIGH);
   digitalWrite(DIRECTION_1_PIN, HIGH);
@@ -53,7 +46,8 @@ void goForward(){
   digitalWrite(DIRECTION_4_PIN, HIGH);
 }
 
-void goBackward(){
+void goBackward(RobotStateMachine_struct *, void*){
+  Serial.println("Backward");
   digitalWrite(ENABLE_A_PIN, HIGH);
   digitalWrite(ENABLE_B_PIN, HIGH);
   digitalWrite(DIRECTION_1_PIN, LOW);
@@ -62,7 +56,8 @@ void goBackward(){
   digitalWrite(DIRECTION_4_PIN, LOW);
 }
 
-void turnLeft(){
+void turnLeft(RobotStateMachine_struct *, void*){
+  Serial.println("Left");
   digitalWrite(ENABLE_A_PIN, HIGH);
   digitalWrite(ENABLE_B_PIN, HIGH);
   digitalWrite(DIRECTION_1_PIN, LOW);
@@ -71,7 +66,8 @@ void turnLeft(){
   digitalWrite(DIRECTION_4_PIN, HIGH); 
 }
 
-void turnRight(){
+void turnRight(RobotStateMachine_struct *, void*){
+  Serial.println("Right");
   digitalWrite(ENABLE_A_PIN, HIGH);
   digitalWrite(ENABLE_B_PIN, HIGH);
   digitalWrite(DIRECTION_1_PIN, HIGH);
@@ -80,7 +76,8 @@ void turnRight(){
   digitalWrite(DIRECTION_4_PIN, LOW);
 }
 
-void stop(){
+void stop(RobotStateMachine_struct *, void*){
+  Serial.println("Stop");
   digitalWrite(ENABLE_A_PIN, LOW);
   digitalWrite(ENABLE_B_PIN, LOW);
   digitalWrite(DIRECTION_1_PIN, LOW);
@@ -89,19 +86,7 @@ void stop(){
   digitalWrite(DIRECTION_4_PIN, LOW);
 }
 
-#define GAUCHE 0
-#define DROIT 1
-
-void pirouette(int la_direction, unsigned int duree, bool arret_apres)
-{
-  if (la_direction == GAUCHE)
-    turnLeft();
-  else
-    turnRight();
-  delay(duree);
-  if (arret_apres)
-    stop();
-}
+RobotStateMachine_struct state_machine__;
 
 //before execute loop() function, 
 //setup() function will execute first and only execute once
@@ -117,42 +102,16 @@ void setup() {
   pinMode(ENABLE_A_PIN, OUTPUT);
   pinMode(ENABLE_B_PIN, OUTPUT);
 
-  timer_init_ISR_1KHz(TIMER_DEFAULT);
-}
-
-void dancer() {
-  int compte = 0;
-debut:
-  goForward();
-  delay(1000);
-  goBackward();
-  delay(1000);
-  turnLeft();
-  delay(1000);
-  turnRight();
-  delay(1000);
-
-  compte = compte + 1;
-  if (compte < 5)
-    goto debut;
-
-  stop();
-  delay(500);
-
-  pirouette(DROIT, 5000, true);
-
-  for (int i = 0; i < 2; ++i)
-  {
-    goForward();
-    delay(500);
-    goBackward();
-    delay(500);
-  }
-  pirouette(DROIT, 5000, true);
-
-  pirouette(GAUCHE, 5000, true);
-
-  stop();
+  RobotStateMachine_init(
+      &state_machine__
+    , NULL
+    , goBackward
+    , goForward
+    , turnLeft
+    , turnRight
+    , stop
+    , 1000
+    );
 }
 
 void loop()
@@ -162,45 +121,69 @@ void loop()
     switch (results.value)
     {
     case BUTTON_UP :
-      goForward();
+      Serial.println("button-up");
+      RobotStateMachine_onButtonUp(&state_machine__, millis());
       break;
     case BUTTON_DOWN :
-      goBackward();
+      Serial.println("button-down");
+      RobotStateMachine_onButtonDown(&state_machine__, millis());
       break;
     case BUTTON_LEFT  :
-      turnLeft();
+      Serial.println("button-left");
+      RobotStateMachine_onButtonLeft(&state_machine__, millis());
       break;
     case BUTTON_RIGHT   :
-      turnRight();
+      Serial.println("button-right");
+      RobotStateMachine_onButtonRight(&state_machine__, millis());
       break;
     case BUTTON_OK      :
-      stop();
+      Serial.println("button-OK");
+      RobotStateMachine_onButtonOK(&state_machine__, millis());
       break;
     case BUTTON_1       :
+      Serial.println("button-1");
       break;
     case BUTTON_2       :
+      Serial.println("button-2");
       break;
     case BUTTON_3       :
-      dancer();
+      Serial.println("button-3");
+      RobotStateMachine_onButton3(&state_machine__, millis());
       break;
     case BUTTON_4       :
+      Serial.println("button-4");
       break;
     case BUTTON_5       :
+      Serial.println("button-5");
       break;
     case BUTTON_6       :
+      Serial.println("button-6");
       break;
     case BUTTON_7       :
+      Serial.println("button-7");
       break;
     case BUTTON_8       :
+      Serial.println("button-8");
       break;
     case BUTTON_9       :
+      Serial.println("button-9");
       break;
     case BUTTON_0       :
+      Serial.println("button-0");
       break;
     case BUTTON_STAR  :
+      Serial.println("button-star");
       break;
     case BUTTON_HASH   :
+      Serial.println("button-hash");
       break;
     }
+  }
+  clock_t update_result(RobotStateMachine_update(&state_machine__, millis()));
+  char buffer[30];
+  if (update_result != (clock_t)-1)
+  {
+    sprintf(buffer, "update_result: %lu", update_result);
+//    Serial.println(buffer);
   }
 }

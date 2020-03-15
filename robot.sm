@@ -1,0 +1,54 @@
+machine robot :
+
+state initial :
+	enter :
+		transition to not-moving;
+state going-forward:
+	enter :
+		action forward;
+state going-backward:
+	enter :
+		action backward;
+state turning-left :
+	enter :
+		action left;
+state turning-right :
+	enter :
+		action right;
+state not-moving :
+	enter :
+		action stop;
+sequence dance :
+	loop 5:
+		action forward;
+		wait 1000;
+		action backward;
+		wait 1000;
+		action left;
+		wait 500;
+		action right;
+		wait 500;
+	end loop;
+	action forward;
+	wait 500;
+	action backward;
+	wait 500;
+	action left;
+	wait 5000;
+	action right;
+	wait 5000;
+	transition to not-moving;
+
+state any :
+	on buttonUp :
+		transition to going-forward;
+	on buttonDown :
+		transition to going-backward;
+	on buttonLeft :
+		transition to turning-left;
+	on buttonRight :
+		transition to turning-right;
+	on buttonOK :
+		transition to not-moving;
+	on button3 :
+		transition to dance;
