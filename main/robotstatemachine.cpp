@@ -93,6 +93,37 @@ static void RobotStateMachine_transitionTo(struct RobotStateMachine_struct *mach
 	case ROBOTSTATE_DANCE_10 :
 		machine->transition_pending_ = true;
 		machine->next_state_ = ROBOTSTATE_NOT_MOVING;
+	case ROBOTSTATE_SHAKE_HEAD_0 :
+		machine->loop_counter_[machine->loop_level_++] = 0;
+		machine->transition_pending_ = true;
+		machine->next_state_ = ROBOTSTATE_SHAKE_HEAD_1;
+		break;
+	case ROBOTSTATE_SHAKE_HEAD_1 :
+		machine->headLeft_callback_(machine, machine->user_);
+		machine->deadline_set_ = true;
+		machine->deadline_ = current_tick_count + ((250 / 1000) * machine->clock_freq_) + ((250 % 1000) * (machine->clock_freq_ / 1000)) ;
+		break;
+	case ROBOTSTATE_SHAKE_HEAD_2 :
+		machine->headRight_callback_(machine, machine->user_);
+		machine->deadline_set_ = true;
+		machine->deadline_ = current_tick_count + ((250 / 1000) * machine->clock_freq_) + ((250 % 1000) * (machine->clock_freq_ / 1000)) ;
+		break;
+	case ROBOTSTATE_SHAKE_HEAD_3 :
+		machine->transition_pending_ = true;
+		if (++machine->loop_counter_[machine->loop_level_ - 1] < 2)
+		{
+			machine->next_state_ = ROBOTSTATE_SHAKE_HEAD_1;
+		}
+		else
+		{
+			machine->next_state_ = ROBOTSTATE_SHAKE_HEAD_4;
+			machine->loop_level_--;
+		}
+		break;
+	case ROBOTSTATE_SHAKE_HEAD_4 :
+		machine->headCenter_callback_(machine, machine->user_);
+		machine->transition_pending_ = true;
+		machine->next_state_ = ROBOTSTATE_NOT_MOVING;
 	}
 	machine->busy_ = false;
 }
@@ -155,6 +186,14 @@ static void RobotStateMachine_timeout(struct RobotStateMachine_struct *machine, 
 		RobotStateMachine_transitionFrom(machine, machine->state_, current_tick_count);
 		RobotStateMachine_transitionTo(machine, ROBOTSTATE_DANCE_10, current_tick_count);
 		break;
+	case ROBOTSTATE_SHAKE_HEAD_1 :
+		RobotStateMachine_transitionFrom(machine, machine->state_, current_tick_count);
+		RobotStateMachine_transitionTo(machine, ROBOTSTATE_SHAKE_HEAD_2, current_tick_count);
+		break;
+	case ROBOTSTATE_SHAKE_HEAD_2 :
+		RobotStateMachine_transitionFrom(machine, machine->state_, current_tick_count);
+		RobotStateMachine_transitionTo(machine, ROBOTSTATE_SHAKE_HEAD_3, current_tick_count);
+		break;
 	default :
 		break;
 	}
@@ -164,6 +203,9 @@ int RobotStateMachine_init(
 	, void *user_data
 	, RobotStateMachineCallback backward
 	, RobotStateMachineCallback forward
+	, RobotStateMachineCallback headCenter
+	, RobotStateMachineCallback headLeft
+	, RobotStateMachineCallback headRight
 	, RobotStateMachineCallback left
 	, RobotStateMachineCallback right
 	, RobotStateMachineCallback stop
@@ -174,6 +216,9 @@ int RobotStateMachine_init(
 	machine->user_ = user_data;
 	machine->backward_callback_ = backward;
 	machine->forward_callback_ = forward;
+	machine->headCenter_callback_ = headCenter;
+	machine->headLeft_callback_ = headLeft;
+	machine->headRight_callback_ = headRight;
 	machine->left_callback_ = left;
 	machine->right_callback_ = right;
 	machine->stop_callback_ = stop;
@@ -212,6 +257,9 @@ clock_t RobotStateMachine_update(struct RobotStateMachine_struct *machine, clock
 		machine->event_pending_ = false;
 		switch (machine->pending_event_)
 		{
+		case ROBOTSTATEMACHINEEVENT_BUTTON2 :
+			RobotStateMachine_onButton2(machine, current_tick_count);
+			break;
 		case ROBOTSTATEMACHINEEVENT_BUTTON3 :
 			RobotStateMachine_onButton3(machine, current_tick_count);
 			break;
@@ -249,6 +297,47 @@ clock_t RobotStateMachine_update(struct RobotStateMachine_struct *machine, clock
 	else
 	{
 		return UINT_MAX;
+	}
+}
+void RobotStateMachine_onButton2(struct RobotStateMachine_struct *machine, clock_t current_tick_count)
+{
+	if (!machine->busy_)
+	{
+		switch (machine->state_)
+		{
+		case ROBOTSTATE_INITIAL :
+			RobotStateMachine_transitionFrom(machine, ROBOTSTATE_INITIAL, current_tick_count);
+			RobotStateMachine_transitionTo(machine, ROBOTSTATE_SHAKE_HEAD_0, current_tick_count);
+			break;
+		case ROBOTSTATE_GOING_FORWARD :
+			RobotStateMachine_transitionFrom(machine, ROBOTSTATE_GOING_FORWARD, current_tick_count);
+			RobotStateMachine_transitionTo(machine, ROBOTSTATE_SHAKE_HEAD_0, current_tick_count);
+			break;
+		case ROBOTSTATE_GOING_BACKWARD :
+			RobotStateMachine_transitionFrom(machine, ROBOTSTATE_GOING_BACKWARD, current_tick_count);
+			RobotStateMachine_transitionTo(machine, ROBOTSTATE_SHAKE_HEAD_0, current_tick_count);
+			break;
+		case ROBOTSTATE_TURNING_LEFT :
+			RobotStateMachine_transitionFrom(machine, ROBOTSTATE_TURNING_LEFT, current_tick_count);
+			RobotStateMachine_transitionTo(machine, ROBOTSTATE_SHAKE_HEAD_0, current_tick_count);
+			break;
+		case ROBOTSTATE_TURNING_RIGHT :
+			RobotStateMachine_transitionFrom(machine, ROBOTSTATE_TURNING_RIGHT, current_tick_count);
+			RobotStateMachine_transitionTo(machine, ROBOTSTATE_SHAKE_HEAD_0, current_tick_count);
+			break;
+		case ROBOTSTATE_NOT_MOVING :
+			RobotStateMachine_transitionFrom(machine, ROBOTSTATE_NOT_MOVING, current_tick_count);
+			RobotStateMachine_transitionTo(machine, ROBOTSTATE_SHAKE_HEAD_0, current_tick_count);
+			break;
+		default :
+			RobotStateMachine_transitionFrom(machine, machine->state_, current_tick_count);
+			RobotStateMachine_transitionTo(machine, ROBOTSTATE_SHAKE_HEAD_0, current_tick_count);
+		}
+	}
+	else
+	{
+		machine->pending_event_ = ROBOTSTATEMACHINEEVENT_BUTTON2;
+		machine->event_pending_ = true;
 	}
 }
 void RobotStateMachine_onButton3(struct RobotStateMachine_struct *machine, clock_t current_tick_count)

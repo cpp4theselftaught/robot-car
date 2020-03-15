@@ -39,6 +39,16 @@ sequence dance :
 	wait 5000;
 	transition to not-moving;
 
+sequence shake-head :
+	loop 2 :
+		action headLeft;
+		wait 250;
+		action headRight;
+		wait 250;
+	end loop;
+	action headCenter;
+	transition to not-moving;
+
 state any :
 	on buttonUp :
 		transition to going-forward;
@@ -50,5 +60,7 @@ state any :
 		transition to turning-right;
 	on buttonOK :
 		transition to not-moving;
+	on button2 :
+		transition to shake-head;
 	on button3 :
 		transition to dance;

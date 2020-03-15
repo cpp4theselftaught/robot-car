@@ -1,3 +1,4 @@
+#include <Servo.h>
 #include <IRremote.h>
 #include "robotstatemachine.h"
 
@@ -34,6 +35,9 @@ uint32_t hello = 0;
 /* Infra-red receiver and decoder */
 IRrecv irrecv(IR_REMOTE_RECV_PIN);
 decode_results results;
+
+/* Servo motor */
+Servo servo__;
 
 /* Functions to move the robot */
 void goForward(RobotStateMachine_struct *, void*){
@@ -86,6 +90,19 @@ void stop(RobotStateMachine_struct *, void*){
   digitalWrite(DIRECTION_4_PIN, LOW);
 }
 
+void headCenter(RobotStateMachine_struct *, void*){
+  Serial.println("Head-Center");
+  servo__.write(90);
+}
+void headLeft(RobotStateMachine_struct *, void*){
+  Serial.println("Head-Left");
+  servo__.write(180);
+}
+void headRight(RobotStateMachine_struct *, void*){
+  Serial.println("Head-Right");
+  servo__.write(0);
+}
+
 RobotStateMachine_struct state_machine__;
 
 //before execute loop() function, 
@@ -94,6 +111,9 @@ void setup() {
   Serial.begin(9600);//open serial and set the baudrate
 
   irrecv.enableIRIn(); // Start the receiver
+
+  servo__.attach(3, 700, 2400);
+  servo__.write(90);
 
   pinMode(DIRECTION_1_PIN, OUTPUT);//before useing io pin, pin mode must be set first 
   pinMode(DIRECTION_2_PIN, OUTPUT);
@@ -107,6 +127,9 @@ void setup() {
     , NULL
     , goBackward
     , goForward
+    , headCenter
+    , headLeft
+    , headRight
     , turnLeft
     , turnRight
     , stop
@@ -145,6 +168,7 @@ void loop()
       break;
     case BUTTON_2       :
       Serial.println("button-2");
+      RobotStateMachine_onButton2(&state_machine__, millis());
       break;
     case BUTTON_3       :
       Serial.println("button-3");

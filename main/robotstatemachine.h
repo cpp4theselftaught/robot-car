@@ -23,11 +23,17 @@ enum RobotStates_enum {
 	, ROBOTSTATE_GOING_FORWARD
 	, ROBOTSTATE_INITIAL
 	, ROBOTSTATE_NOT_MOVING
+	, ROBOTSTATE_SHAKE_HEAD_0
+	, ROBOTSTATE_SHAKE_HEAD_1
+	, ROBOTSTATE_SHAKE_HEAD_2
+	, ROBOTSTATE_SHAKE_HEAD_3
+	, ROBOTSTATE_SHAKE_HEAD_4
 	, ROBOTSTATE_TURNING_LEFT
 	, ROBOTSTATE_TURNING_RIGHT
 	};
 enum RobotStateMachineEvents_enum {
-	  ROBOTSTATEMACHINEEVENT_BUTTON3
+	  ROBOTSTATEMACHINEEVENT_BUTTON2
+	, ROBOTSTATEMACHINEEVENT_BUTTON3
 	, ROBOTSTATEMACHINEEVENT_BUTTONDOWN
 	, ROBOTSTATEMACHINEEVENT_BUTTONLEFT
 	, ROBOTSTATEMACHINEEVENT_BUTTONOK
@@ -56,6 +62,9 @@ struct RobotStateMachine_struct
 	clock_t clock_freq_;
 	RobotStateMachineCallback backward_callback_;
 	RobotStateMachineCallback forward_callback_;
+	RobotStateMachineCallback headCenter_callback_;
+	RobotStateMachineCallback headLeft_callback_;
+	RobotStateMachineCallback headRight_callback_;
 	RobotStateMachineCallback left_callback_;
 	RobotStateMachineCallback right_callback_;
 	RobotStateMachineCallback stop_callback_;
@@ -66,6 +75,9 @@ int RobotStateMachine_init(
 	, void *user_data
 	, RobotStateMachineCallback backward
 	, RobotStateMachineCallback forward
+	, RobotStateMachineCallback headCenter
+	, RobotStateMachineCallback headLeft
+	, RobotStateMachineCallback headRight
 	, RobotStateMachineCallback left
 	, RobotStateMachineCallback right
 	, RobotStateMachineCallback stop
@@ -73,6 +85,7 @@ int RobotStateMachine_init(
 	);
 void RobotStateMachine_fini(struct RobotStateMachine_struct *machine);
 clock_t RobotStateMachine_update(struct RobotStateMachine_struct *machine, clock_t current_tick_count);
+void RobotStateMachine_onButton2(struct RobotStateMachine_struct *machine, clock_t current_tick_count);
 void RobotStateMachine_onButton3(struct RobotStateMachine_struct *machine, clock_t current_tick_count);
 void RobotStateMachine_onButtonDown(struct RobotStateMachine_struct *machine, clock_t current_tick_count);
 void RobotStateMachine_onButtonLeft(struct RobotStateMachine_struct *machine, clock_t current_tick_count);
