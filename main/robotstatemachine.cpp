@@ -93,6 +93,7 @@ static void RobotStateMachine_transitionTo(struct RobotStateMachine_struct *mach
 	case ROBOTSTATE_DANCE_10 :
 		machine->transition_pending_ = true;
 		machine->next_state_ = ROBOTSTATE_NOT_MOVING;
+		break;
 	case ROBOTSTATE_SHAKE_HEAD_0 :
 		machine->loop_counter_[machine->loop_level_++] = 0;
 		machine->transition_pending_ = true;
@@ -124,6 +125,7 @@ static void RobotStateMachine_transitionTo(struct RobotStateMachine_struct *mach
 		machine->headCenter_callback_(machine, machine->user_);
 		machine->transition_pending_ = true;
 		machine->next_state_ = ROBOTSTATE_NOT_MOVING;
+		break;
 	}
 	machine->busy_ = false;
 }
